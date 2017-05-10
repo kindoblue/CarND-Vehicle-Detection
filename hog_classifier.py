@@ -10,6 +10,7 @@ import glob
 import time
 import pickle
 
+
 # taken from the lessons, it returns HOG features and visualization
 def get_hog_features(img,
                      orient,
@@ -211,11 +212,9 @@ def train():
     # classifier wrapped by the grid search
     clf = GridSearchCV(svc, parameters)
     
-    # check the training time for the SVC
-    t = time.time()
-
     # fit on the the entire dataset, as the searcher will do cross
     # validation on his own
+    t = time.time()
     clf.fit(scaled_X, y)
     t2 = time.time()
     print(round(t2 - t, 2), 'Seconds to discover parameters...')
@@ -241,7 +240,7 @@ def train():
     t2 = time.time()
     print(round(t2 - t, 5), 'Seconds to predict', n_predict, 'labels with SVC')
 
-    # serialize the classifier, for later user
+    # serialize the classifier, for later use
     pickle.dump(svc, open("svc.p", "wb"))
 
 if __name__ == '__main__':

@@ -1,15 +1,14 @@
 from skimage.feature import hog
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV
 import matplotlib.image as mpimg
-import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 import glob
 import time
-from sklearn.model_selection import train_test_split
-from sklearn.svm import SVC
-from sklearn.model_selection import GridSearchCV
-
+import pickle
 
 # taken from the lessons, it returns HOG features and visualization
 def get_hog_features(img,
@@ -161,6 +160,7 @@ def train():
     cell_per_block = 2
     hog_channel = "ALL"  # Can be 0, 1, 2, or "ALL"
     
+    # extract the features from the images
     t = time.time()
     car_features = extract_features(cars,
                                     cspace=colorspace,
@@ -240,6 +240,9 @@ def train():
     print('For these', n_predict, 'labels: ', y_test[0:n_predict])
     t2 = time.time()
     print(round(t2 - t, 5), 'Seconds to predict', n_predict, 'labels with SVC')
+
+    # serialize the classifier, for later user
+    pickle.dump(svc, open("svc.p", "wb"))
 
 if __name__ == '__main__':
     train()

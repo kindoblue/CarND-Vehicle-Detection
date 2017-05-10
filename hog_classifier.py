@@ -7,7 +7,8 @@ import cv2
 import glob
 import time
 from sklearn.model_selection import train_test_split
-from sklearn.svm import LinearSVC
+from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV
 
 
 # taken from the lessons, it returns HOG features and visualization
@@ -201,10 +202,29 @@ def train():
           'pixels per cell and', cell_per_block, 'cells per block')
     print('Feature vector length:', len(X_train[0]))
     
-    # use a linear SVC
-    svc = LinearSVC()
+    # use SVC
+    svc = SVC()
+    
+    # parameters to explore
+    parameters = {'kernel': ('linear', 'rbf'), 'C': [1, 2, 3, 4, 5]}
+    
+    # classifier wrapped by the grid search
+    clf = GridSearchCV(svc, parameters)
     
     # check the training time for the SVC
+    t = time.time()
+
+    # fit on the the entire dataset, as the searcher will do cross
+    # validation on his own
+    clf.fit(scaled_X, y)
+    t2 = time.time()
+    print(round(t2 - t, 2), 'Seconds to discover parameters...')
+    print('Best params ', clf.best_params_)
+    
+    # re-create the classifier with the best parameters
+    svc = SVC(C=clf.best_params_['C'], kernel=clf.best_params_['kernel'])
+    
+    # train
     t = time.time()
     svc.fit(X_train, y_train)
     t2 = time.time()

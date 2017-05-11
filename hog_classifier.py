@@ -155,9 +155,9 @@ def train():
         notcars.append(image)
     
     # parameters to setup feature extraction
-    colorspace = 'RGB'  # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
-    orient = 9
-    pix_per_cell = 8
+    colorspace = 'YUV'  # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+    orient = 11
+    pix_per_cell = 16
     cell_per_block = 2
     hog_channel = "ALL"  # Can be 0, 1, 2, or "ALL"
     
@@ -240,8 +240,17 @@ def train():
     t2 = time.time()
     print(round(t2 - t, 5), 'Seconds to predict', n_predict, 'labels with SVC')
 
-    # serialize the classifier, for later use
-    pickle.dump(svc, open("svc.p", "wb"))
+    # serialize the classifier and params, for later use
+    save_dict = {
+        "svc": svc,
+        "scaler": scaler,
+        "colorspace": colorspace,
+        "orient": orient,
+        "pix_per_cell": pix_per_cell,
+        "cell_per_block": cell_per_block
+    }
+    
+    pickle.dump(save_dict, open("svc.p", "wb"))
 
 if __name__ == '__main__':
     train()

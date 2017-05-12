@@ -17,12 +17,26 @@ def convert_color(p_img, conv='RGB2YCrCb'):
         return cv2.cvtColor(p_img, cv2.COLOR_RGB2YUV)
 
 
+def draw_rectangles(p_img, p_lst):
+    
+    # dont change the original
+    cimg = np.copy(p_img)
+    
+    # cycle on all the rectangles and draw them
+    for rect in p_lst:
+        top, bottom = rect
+        cv2.rectangle(cimg, top, bottom, (255, 255, 0), 5)
+   
+    return cimg
+
+
 # define a single function that can extract features using
-# hog sub-sampling and make predictions
+# hog sub-sampling and make predictions. Taken from lessons and
+# adapted
 def find_cars(p_img, p_ystart, p_ystop, p_scale, p_svc, p_X_scaler, p_orient,
               p_pix_per_cell, p_cell_per_block, p_debug=False):
     # prepare output
-    draw_img = np.copy(p_img)
+    rects = []
     
     # crop the image to get only the relevant area where cars could be
     img_tosearch = p_img[p_ystart:p_ystop, :, :]
@@ -80,24 +94,30 @@ def find_cars(p_img, p_ystart, p_ystop, p_scale, p_svc, p_X_scaler, p_orient,
             xleft = xpos * p_pix_per_cell
             ytop = ypos * p_pix_per_cell
             
-            # scale features and make a prediction
+            # scale features
             test_features = p_X_scaler.transform(hog_features.reshape(1, -1))
             
+            # and make a prediction using the classifier
             test_prediction = p_svc.predict(test_features)
             
+            # save the current rectangle if the car was found in it
             if test_prediction == 1 or p_debug:
                 xbox_left = np.int(xleft * p_scale)
                 ytop_draw = np.int(ytop * p_scale)
                 win_draw = np.int(window * p_scale)
-                cv2.rectangle(draw_img, (xbox_left, ytop_draw + p_ystart), (
-                    xbox_left + win_draw, ytop_draw + win_draw + p_ystart),
-                              (0, 0, 255), 6)
+                top = (xbox_left, ytop_draw + p_ystart)
+                bottom = (xbox_left + win_draw, ytop_draw + win_draw + p_ystart)
+                rects.append((top, bottom))
     
-    return draw_img
+    return rects
 
 
 def scan_picture(p_img, p_svc, p_X_scaler, p_orient, p_pix_per_cell,
                  p_cell_per_block):
+    # prepare output
+    rects = []
+    
+    # define the windows, for each scale, where to search for cars
     img_size = 64
     windows = [(1.0, 400, 400 + img_size),
                (1.0, 416, 416 + img_size),
@@ -108,14 +128,20 @@ def scan_picture(p_img, p_svc, p_X_scaler, p_orient, p_pix_per_cell,
                (3.5, 400, 400 + int(img_size * 3.5)),
                (3.5, 464, 464 + int(img_size * 3.5))]
     
+    # for every windows, start searching for cars
     for w in windows:
         scale, start, stop = w
         out = find_cars(p_img, start, stop, scale, p_svc, p_X_scaler,
                         p_orient, p_pix_per_cell, p_cell_per_block)
-        plt.imshow(out)
+        if out:
+            rects += out
+
+    # rects contains all the matches in the image
+    return rects
 
 
 if __name__ == '__main__':
+    
     dist_pickle = pickle.load(open("svc.p", "rb"))
     m_svc = dist_pickle["svc"]
     m_X_scaler = dist_pickle["scaler"]
@@ -127,10 +153,13 @@ if __name__ == '__main__':
     img = mpimg.imread('test_images/test3.jpg')
     
     # find the cars
-    # out_img = \
-    scan_picture(img, m_svc, m_X_scaler, orient, pix_per_cell, cell_per_block)
+    m_rects = scan_picture(img, m_svc, m_X_scaler, orient, pix_per_cell,
+                           cell_per_block)
+
+    # draw the rectangles found
+    res = draw_rectangles(img, m_rects)
     
     # show the result image
-    # plt.imshow(out_img)
+    plt.imshow(res)
     
     pass

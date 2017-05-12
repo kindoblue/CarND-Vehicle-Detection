@@ -20,8 +20,7 @@ def convert_color(p_img, conv='RGB2YCrCb'):
 # define a single function that can extract features using
 # hog sub-sampling and make predictions
 def find_cars(p_img, p_ystart, p_ystop, p_scale, p_svc, p_X_scaler, p_orient,
-              p_pix_per_cell, p_cell_per_block):
-    
+              p_pix_per_cell, p_cell_per_block, p_debug=False):
     # prepare output
     draw_img = np.copy(p_img)
     
@@ -40,7 +39,7 @@ def find_cars(p_img, p_ystart, p_ystop, p_scale, p_svc, p_X_scaler, p_orient,
     # define blocks and steps as above
     nxblocks = (ctrans_tosearch.shape[1] // pix_per_cell) - p_cell_per_block + 3
     nyblocks = (ctrans_tosearch.shape[0] // pix_per_cell) - p_cell_per_block + 3
-
+    
     # 64 was the orginal sampling rate, with 8 cells and 8 pix per cell
     window = 64
     
@@ -48,7 +47,7 @@ def find_cars(p_img, p_ystart, p_ystop, p_scale, p_svc, p_X_scaler, p_orient,
     cells_per_step = 2  # Instead of overlap, define how many cells to step
     nxsteps = (nxblocks - nblocks_per_window) // cells_per_step
     nysteps = (nyblocks - nblocks_per_window) // cells_per_step
-
+    
     ch1 = ctrans_tosearch[:, :, 0]
     ch2 = ctrans_tosearch[:, :, 1]
     ch3 = ctrans_tosearch[:, :, 2]
@@ -60,7 +59,7 @@ def find_cars(p_img, p_ystart, p_ystop, p_scale, p_svc, p_X_scaler, p_orient,
                             feature_vec=False)
     hog3 = get_hog_features(ch3, p_orient, p_pix_per_cell, p_cell_per_block,
                             feature_vec=False)
-
+    
     for xb in range(nxsteps):
         for yb in range(nysteps):
             ypos = yb * cells_per_step
@@ -86,46 +85,52 @@ def find_cars(p_img, p_ystart, p_ystop, p_scale, p_svc, p_X_scaler, p_orient,
             
             test_prediction = p_svc.predict(test_features)
             
-            if test_prediction == 1:
+            if test_prediction == 1 or p_debug:
                 xbox_left = np.int(xleft * p_scale)
                 ytop_draw = np.int(ytop * p_scale)
                 win_draw = np.int(window * p_scale)
                 cv2.rectangle(draw_img, (xbox_left, ytop_draw + p_ystart), (
                     xbox_left + win_draw, ytop_draw + win_draw + p_ystart),
                               (0, 0, 255), 6)
-            else:
-                xbox_left = np.int(xleft * p_scale)
-                ytop_draw = np.int(ytop * p_scale)
-                win_draw = np.int(window * p_scale)
-                # cv2.rectangle(draw_img, (xbox_left, ytop_draw + p_ystart), (
-                #     xbox_left + win_draw, ytop_draw + win_draw + p_ystart),
-                #               (255, 255, 0), 6)
     
     return draw_img
 
 
+def scan_picture(p_img, p_svc, p_X_scaler, p_orient, p_pix_per_cell,
+                 p_cell_per_block):
+    img_size = 64
+    windows = [(1.0, 400, 400 + img_size),
+               (1.0, 416, 416 + img_size),
+               (1.5, 400, 400 + int(img_size * 1.5)),
+               (1.5, 432, 432 + int(img_size * 1.5)),
+               (2.0, 400, 400 + int(img_size * 2.0)),
+               (2.0, 432, 432 + int(img_size * 2.0)),
+               (3.5, 400, 400 + int(img_size * 3.5)),
+               (3.5, 464, 464 + int(img_size * 3.5))]
+    
+    for w in windows:
+        scale, start, stop = w
+        out = find_cars(p_img, start, stop, scale, p_svc, p_X_scaler,
+                        p_orient, p_pix_per_cell, p_cell_per_block)
+        plt.imshow(out)
+
+
 if __name__ == '__main__':
-    
-    m_ystart = 400
-    m_ystop = 656
-    m_scale = 1.3
-    
     dist_pickle = pickle.load(open("svc.p", "rb"))
     m_svc = dist_pickle["svc"]
     m_X_scaler = dist_pickle["scaler"]
     orient = dist_pickle["orient"]
     pix_per_cell = dist_pickle["pix_per_cell"]
     cell_per_block = dist_pickle["cell_per_block"]
-
+    
     # load a test image
-    img = mpimg.imread('test_images/test1.jpg')
-
+    img = mpimg.imread('test_images/test3.jpg')
+    
     # find the cars
-    out_img = find_cars(img, m_ystart, m_ystop, m_scale, m_svc, m_X_scaler, orient,
-                        pix_per_cell, cell_per_block)
-
+    # out_img = \
+    scan_picture(img, m_svc, m_X_scaler, orient, pix_per_cell, cell_per_block)
+    
     # show the result image
-    plt.imshow(out_img)
+    # plt.imshow(out_img)
     
     pass
-

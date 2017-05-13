@@ -4,6 +4,7 @@ import numpy as np
 import pickle
 import cv2
 from hog_classifier import get_hog_features
+from scipy.ndimage.measurements import label
 
 
 def convert_color(p_img, conv='RGB2YCrCb'):
@@ -140,6 +141,61 @@ def scan_picture(p_img, p_svc, p_X_scaler, p_orient, p_pix_per_cell,
     return rects
 
 
+# taken from the lessons, it builds a heat map
+def add_heat(p_heatmap, rects):
+    # iterate through list of bboxes
+    for box in rects:
+        # add 1 for all pixels inside each bbox
+        # Assuming each "box" takes the form ((x1, y1), (x2, y2))
+        p_heatmap[box[0][1]:box[1][1], box[0][0]:box[1][0]] += 1
+
+    # return updated heatmap
+    return p_heatmap
+
+
+# taken from the lessons, it thresholds the heatmap
+def apply_threshold(p_heatmap, threshold):
+    
+    # zero out pixels below the threshold
+    p_heatmap[p_heatmap <= threshold] = 0
+    
+    # return thresholded map
+    return p_heatmap
+
+
+# adapted from lessons
+def draw_labeled_bboxes(p_img, p_rects):
+    
+    # create the heat map
+    blank_img = np.zeros_like(res_img[:, :, 0])
+    heatmap_img = add_heat(blank_img, p_rects)
+    
+    # threshold the heatmap
+    heatmap_img = apply_threshold(heatmap_img, 3)
+    
+    # get the labels
+    labels = label(heatmap_img)
+    # print(labels[1], 'cars found')
+    
+    # iterate through all detected cars
+    for car_number in range(1, labels[1]+1):
+        
+        # find pixels with each car_number label value
+        nonzero = (labels[0] == car_number).nonzero()
+        
+        # identify x and y values of those pixels
+        nonzeroy = np.array(nonzero[0])
+        nonzerox = np.array(nonzero[1])
+        
+        # define a bounding box based on min/max x and y
+        bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
+        
+        # draw the box on the image
+        cv2.rectangle(p_img, bbox[0], bbox[1], (0, 0, 255), 6)
+    
+    # return the image
+    return p_img
+
 if __name__ == '__main__':
     
     dist_pickle = pickle.load(open("svc.p", "rb"))
@@ -148,18 +204,26 @@ if __name__ == '__main__':
     orient = dist_pickle["orient"]
     pix_per_cell = dist_pickle["pix_per_cell"]
     cell_per_block = dist_pickle["cell_per_block"]
+
+    # create the figure
+    plt.figure(figsize=(10, 10))
     
     # load a test image
-    img = mpimg.imread('test_images/test3.jpg')
+    img = mpimg.imread('test_images/test1.jpg')
     
     # find the cars
     m_rects = scan_picture(img, m_svc, m_X_scaler, orient, pix_per_cell,
                            cell_per_block)
 
     # draw the rectangles found
-    res = draw_rectangles(img, m_rects)
+    res_img = draw_rectangles(img, m_rects)
     
     # show the result image
-    plt.imshow(res)
+    plt.imshow(res_img)
+
+    # add the boxes found with heatmap method
+    res_img = draw_labeled_bboxes(res_img, m_rects)
+    
+    plt.imshow(res_img)
     
     pass

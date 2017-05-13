@@ -1,5 +1,3 @@
-import matplotlib.image as mpimg
-import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 import cv2
@@ -54,8 +52,8 @@ def find_cars(p_img, p_ystart, p_ystop, p_scale, p_svc, p_X_scaler, p_orient,
             np.int(imshape[1] / p_scale), np.int(imshape[0] / p_scale)))
     
     # define blocks and steps as above
-    nxblocks = (ctrans_tosearch.shape[1] // pix_per_cell) - p_cell_per_block + 3
-    nyblocks = (ctrans_tosearch.shape[0] // pix_per_cell) - p_cell_per_block + 3
+    nxblocks = (ctrans_tosearch.shape[1] // p_pix_per_cell) - p_cell_per_block + 3
+    nyblocks = (ctrans_tosearch.shape[0] // p_pix_per_cell) - p_cell_per_block + 3
     
     # 64 was the orginal sampling rate, with 8 cells and 8 pix per cell
     window = 64
@@ -238,26 +236,5 @@ if __name__ == '__main__':
 
     # finally save the clip
     processed_clip.write_videofile("project_video.out.mp4", audio=False)
-    
-    # create the figure
-    # plt.figure(figsize=(10, 10))
-    
-    # load a test image
-    # img = mpimg.imread('test_images/test1.jpg')
-    
-    # find the cars
-    # m_rects = scan_picture(img, m_svc, m_X_scaler, orient, pix_per_cell,
-    #                       cell_per_block)
-
-    # draw the rectangles found
-    # res_img = draw_rectangles(img, m_rects)
-    
-    # show the result image
-    # plt.imshow(res_img)
-
-    # add the boxes found with heatmap method
-    # res_img = draw_labeled_bboxes(res_img, m_rects)
-    
-    plt.imshow(res_img)
     
     pass

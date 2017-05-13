@@ -5,6 +5,8 @@ import pickle
 import cv2
 from hog_classifier import get_hog_features
 from scipy.ndimage.measurements import label
+from functools import partial
+from moviepy.editor import VideoFileClip
 
 
 def convert_color(p_img, conv='RGB2YCrCb'):
@@ -167,7 +169,7 @@ def apply_threshold(p_heatmap, threshold):
 def draw_labeled_bboxes(p_img, p_rects):
     
     # create the heat map
-    blank_img = np.zeros_like(res_img[:, :, 0])
+    blank_img = np.zeros_like(p_img[:, :, 0])
     heatmap_img = add_heat(blank_img, p_rects)
     
     # threshold the heatmap
@@ -196,33 +198,65 @@ def draw_labeled_bboxes(p_img, p_rects):
     # return the image
     return p_img
 
-if __name__ == '__main__':
-    
-    dist_pickle = pickle.load(open("svc.p", "rb"))
-    m_svc = dist_pickle["svc"]
-    m_X_scaler = dist_pickle["scaler"]
-    orient = dist_pickle["orient"]
-    pix_per_cell = dist_pickle["pix_per_cell"]
-    cell_per_block = dist_pickle["cell_per_block"]
 
-    # create the figure
-    plt.figure(figsize=(10, 10))
-    
-    # load a test image
-    img = mpimg.imread('test_images/test1.jpg')
+def _pipeline(p_img, p_svc, p_X_scaler, p_orient, p_pix_per_cell,
+              p_cell_per_block):
     
     # find the cars
-    m_rects = scan_picture(img, m_svc, m_X_scaler, orient, pix_per_cell,
-                           cell_per_block)
+    rects = scan_picture(p_img, p_svc, p_X_scaler, p_orient, p_pix_per_cell,
+                         p_cell_per_block)
+    
+    # draw the rectangles found
+    res_img = draw_rectangles(p_img, rects)
+    
+    # add the boxes found with heatmap method and return
+    return draw_labeled_bboxes(res_img, rects)
+
+if __name__ == '__main__':
+    
+    # load parameters used to train the svm
+    with open(r"svc.p", "rb") as pfile:
+        pickled = pickle.load(pfile)
+
+    m_svc = pickled["svc"]
+    m_X_scaler = pickled["scaler"]
+    orient = pickled["orient"]
+    pix_per_cell = pickled["pix_per_cell"]
+    cell_per_block = pickled["cell_per_block"]
+
+    # partial application on _pipeline function, so I can
+    # send in the other parameters
+    pipeline = partial(_pipeline, p_svc=m_svc, p_X_scaler=m_X_scaler,
+                       p_orient=orient, p_pix_per_cell=pix_per_cell,
+                       p_cell_per_block=cell_per_block)
+
+    # open the clip
+    clip = VideoFileClip('project_video.mp4')
+
+    # process the clip
+    processed_clip = clip.fl_image(pipeline)
+
+    # finally save the clip
+    processed_clip.write_videofile("project_video.out.mp4", audio=False)
+    
+    # create the figure
+    # plt.figure(figsize=(10, 10))
+    
+    # load a test image
+    # img = mpimg.imread('test_images/test1.jpg')
+    
+    # find the cars
+    # m_rects = scan_picture(img, m_svc, m_X_scaler, orient, pix_per_cell,
+    #                       cell_per_block)
 
     # draw the rectangles found
-    res_img = draw_rectangles(img, m_rects)
+    # res_img = draw_rectangles(img, m_rects)
     
     # show the result image
-    plt.imshow(res_img)
+    # plt.imshow(res_img)
 
     # add the boxes found with heatmap method
-    res_img = draw_labeled_bboxes(res_img, m_rects)
+    # res_img = draw_labeled_bboxes(res_img, m_rects)
     
     plt.imshow(res_img)
     

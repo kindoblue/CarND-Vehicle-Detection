@@ -21,11 +21,14 @@ if __name__ == '__main__':
     # load a test image
     img = mpimg.imread('test_images/test1.jpg')
 
+    # rescale!
+    # img = img.astype(np.float32) / 255
+    
     # find the cars
     m_rects = scan_picture(img, m_svc, m_X_scaler, orient, pix_per_cell,
                            cell_per_block)
 
-    # draw the rectangles found
+    # draw all the rectangles found, for the debug purposes
     res_img = draw_rectangles(img, m_rects)
 
     # show the result image

@@ -38,9 +38,11 @@ def find_cars(p_img, p_ystart, p_ystop, p_scale, p_svc, p_X_scaler, p_orient,
               p_pix_per_cell, p_cell_per_block, p_debug=False):
     # prepare output
     rects = []
+
+    rescaled_img = p_img.astype(np.float32) / 255
     
     # crop the image to get only the relevant area where cars could be
-    img_tosearch = p_img[p_ystart:p_ystop, :, :]
+    img_tosearch = rescaled_img[p_ystart:p_ystop, :, :]
     
     # change color space
     ctrans_tosearch = convert_color(img_tosearch, conv='RGB2YUV')
@@ -171,13 +173,12 @@ def draw_labeled_bboxes(p_img, p_rects):
     heatmap_img = add_heat(blank_img, p_rects)
     
     # threshold the heatmap
-    heatmap_img = apply_threshold(heatmap_img, 3)
+    heatmap_img = apply_threshold(heatmap_img, 1)
     
     # get the labels
     labels = label(heatmap_img)
-    # print(labels[1], 'cars found')
     
-    # iterate through all detected cars
+    # iterate through all the labels
     for car_number in range(1, labels[1]+1):
         
         # find pixels with each car_number label value
@@ -204,11 +205,8 @@ def _pipeline(p_img, p_svc, p_X_scaler, p_orient, p_pix_per_cell,
     rects = scan_picture(p_img, p_svc, p_X_scaler, p_orient, p_pix_per_cell,
                          p_cell_per_block)
     
-    # draw the rectangles found
-    res_img = draw_rectangles(p_img, rects)
-    
     # add the boxes found with heatmap method and return
-    return draw_labeled_bboxes(res_img, rects)
+    return draw_labeled_bboxes(p_img, rects)
 
 if __name__ == '__main__':
     
@@ -236,5 +234,3 @@ if __name__ == '__main__':
 
     # finally save the clip
     processed_clip.write_videofile("project_video.out.mp4", audio=False)
-    
-    pass

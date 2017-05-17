@@ -142,8 +142,8 @@ def extract_features(imgs,
 
 def train():
     
-    b = glob.glob('images/non-vehicles_smallset/**/*.jpeg', recursive=True)
-    a = glob.glob('images/vehicles_smallset/**/*.jpeg', recursive=True)
+    b = glob.glob('images/non-vehicles/**/*.png', recursive=True)
+    a = glob.glob('images/vehicles/**/*.png', recursive=True)
     
     cars = []
     notcars = []
@@ -222,7 +222,7 @@ def train():
     
     # re-create the classifier with the best parameters
     svc = SVC(C=clf.best_params_['C'], kernel=clf.best_params_['kernel'])
-    
+
     # train
     t = time.time()
     svc.fit(X_train, y_train)
